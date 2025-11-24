@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { sugerenciasHorario as mockData } from '../assets/mockData'; 
+import { useState, useEffect } from 'react';
+import { api } from '../services/api'; 
 import { Card } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Loader from '../components/ui/Loader';
@@ -19,11 +19,11 @@ const ResultsView = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Simular espera para verloo
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setData(mockData);
+        const result = await api.getSugerencias();
+        setData(result);
       } catch (err) {
-        setError('No se pudieron cargar los horarios generados. Intente recargar.');
+        console.error(err);
+        setError('No se pudieron cargar los horarios generados. Verifique la conexión.');
       } finally {
         setIsLoading(false);
       }
@@ -35,16 +35,15 @@ const ResultsView = () => {
   const filteredData = data.filter((item) => {
     const matchesCarrera = 
       carreraFilter === 'all' || 
-      (carreraFilter === 'ISC' && (item.salon.includes('SISTEMAS') || item.salon.includes('PROG') || item.salon.includes('CC') || item.salon.includes('CB'))) ||
-      (carreraFilter === 'IND' && (item.salon.includes('IND') || item.salon.includes('DH')));
+      item.carrera === carreraFilter; 
 
     const matchesSemestre = 
         semestreFilter === 'all' || 
-        item.semestre.toString() === semestreFilter;
+        item.semestre?.toString() === semestreFilter;
 
     const matchesSearch = 
-      item.materia.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.profesor.toLowerCase().includes(searchTerm.toLowerCase());
+      item.materia?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.profesor?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesCarrera && matchesSemestre && matchesSearch;
   });
@@ -130,7 +129,9 @@ const ResultsView = () => {
                     <td className="px-6 py-4 text-slate-600">{item.salon}</td>
                     <td className="px-6 py-4 text-slate-600">{item.demanda}</td>
                     <td className="px-6 py-4">
-                        <Badge variant={item.score >= 90 ? 'success' : item.score >= 80 ? 'warning' : 'danger'}>{item.score}%</Badge>
+                        <Badge variant={parseFloat(item.score) >= 90 ? 'success' : parseFloat(item.score) >= 80 ? 'warning' : 'danger'}>
+                            {item.score}%
+                        </Badge>
                     </td>
                     </tr>
                 ))

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { modelMetrics as mockMetrics, modelHistory as mockHistory } from '../assets/mockData';
+import { useState, useEffect } from 'react';
+import { api } from '../services/api'; 
 import KpiCard from '../components/dashboard/KpiCard';
 import Loader from '../components/ui/Loader';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
@@ -16,15 +16,22 @@ const ModelAnalytics = () => {
     const fetchAnalytics = async () => {
       setIsLoading(true);
       try {
-        await new Promise(resolve => setTimeout(resolve, 1200)); // SIMULAR
-        setMetrics(mockMetrics);
-        setHistory(mockHistory);
+        const data = await api.getAnalytics();
+        
+        setMetrics({
+            kpis: data.kpis,
+            topFeatures: data.topFeatures
+        });
+        setHistory(data.modelHistory);
+
       } catch (err) {
+        console.error(err);
         setError('No se pudieron cargar las métricas del modelo.');
       } finally {
         setIsLoading(false);
       }
     };
+    
     fetchAnalytics();
   }, []);
 
@@ -34,8 +41,11 @@ const ModelAnalytics = () => {
     <div className="h-[50vh] flex flex-col items-center justify-center text-slate-400">
         <AlertTriangle size={48} className="mb-4 text-red-400 opacity-80"/>
         <p>{error}</p>
+        <button onClick={() => window.location.reload()} className="mt-4 text-blue-600 hover:underline">Intentar de nuevo</button>
     </div>
   );
+
+  if (!metrics || !history) return null;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -76,12 +86,13 @@ const ModelAnalytics = () => {
                 <LineChart data={history} margin={{ right: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                     <XAxis dataKey="semestre" stroke="#64748b" tick={{fontSize: 12}} />
-                    {/* NO SE SI SE VAYA A USAR */}
+                    
                     <YAxis yAxisId="left" domain={[0, 1]} stroke="#16a34a" />
-                    {/* Eje Y Derecho para RMSE */}
                     <YAxis yAxisId="right" orientation="right" stroke="#ef4444" />
+                    
                     <Tooltip contentStyle={{ borderRadius: '8px' }} />
                     <Legend verticalAlign="top" height={36}/>
+                    
                     <Line yAxisId="left" type="monotone" dataKey="f1Score" stroke="#16a34a" strokeWidth={3} dot={{r:4}} name="F1-Score (Precisión)" />
                     <Line yAxisId="right" type="monotone" dataKey="rmse" stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" dot={{r:4}} name="RMSE (Error)" />
                 </LineChart>

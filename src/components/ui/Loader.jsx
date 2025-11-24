@@ -1,5 +1,3 @@
-import React from 'react';
-
 const Loader = ({ size = 'md', text = 'Cargando datos...' }) => {
   const sizes = {
     sm: 'w-5 h-5',

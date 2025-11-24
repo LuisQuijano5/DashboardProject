@@ -1,5 +1,3 @@
-import React from 'react';
-
 const Badge = ({ children, variant = 'default' }) => {
   const styles = {
     default: "bg-slate-100 text-slate-800",

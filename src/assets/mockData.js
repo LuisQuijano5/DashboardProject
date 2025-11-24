@@ -1,3 +1,5 @@
+// ESTE ARCHIVO SOLO SE USO PARA LOS TESTS INICIALES Y PODER DESARROLLAR EN PARALELO EL DASHBOARD Y LOS JOBS DE GLUE. YA NO SE UTILIZA PARA NADA EN LA VERSION FINAL
+
 export const datasetStats = {
   reprobacion: [
     { materia: 'Cálculo Integral', tasa: 45 },

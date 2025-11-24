@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { datasetStats as mockStats } from '../assets/mockData';
+import { useState, useEffect } from 'react';
+import { api } from '../services/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import Loader from '../components/ui/Loader';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, AreaChart, Area, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, AreaChart, Area, ReferenceLine, Cell } from 'recharts';
 import { AlertTriangle } from 'lucide-react';
 
 const DatasetExplorer = () => {
@@ -14,11 +14,62 @@ const DatasetExplorer = () => {
     const fetchDatasetStats = async () => {
       setIsLoading(true);
       try {
-        // Simular 
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setStats(mockStats);
+        const [dashboardData, asistenciaData] = await Promise.all([
+            api.getDashboardData(), 
+            api.getAsistencia()     
+        ]);
+
+
+        const processedBottlenecks = dashboardData.bottlenecks.map(item => ({
+            materia: item.materia_nombre,
+            tasa: parseFloat(item.tasa_reprobacion) <= 1 
+                  ? (parseFloat(item.tasa_reprobacion) * 100).toFixed(1) 
+                  : parseFloat(item.tasa_reprobacion)
+        })).slice(0, 5); 
+
+ 
+        const tuitionMap = {};
+        dashboardData.tuitionEvolution.forEach(item => {
+            const anio = item.anio || item.semestre_historico; 
+            if (!tuitionMap[anio]) {
+                tuitionMap[anio] = { anio: anio };
+            }
+            tuitionMap[anio][item.carrera] = parseInt(item.matricula || item.num_alumnos_activos);
+        });
+        const processedTuition = Object.values(tuitionMap).sort((a, b) => String(a.anio).localeCompare(String(b.anio)));
+
+        const processedTimeBias = dashboardData.timeBias.map(item => ({
+            hora: item.hora || item.hora_inicio_promedio,
+            tasa: parseFloat(item.tasa_aprobacion_promedio) <= 1
+                  ? (parseFloat(item.tasa_aprobacion_promedio) * 100).toFixed(1)
+                  : item.tasa_aprobacion_promedio
+        })).sort((a, b) => parseInt(a.hora) - parseInt(b.hora));
+
+        const processedTeachers = dashboardData.teacherQuality.map(item => ({
+            nombre: item.nombre_profesor,
+            promedio: parseFloat(item.calificacion_promedio).toFixed(1)
+        })).sort((a, b) => b.promedio - a.promedio); 
+
+        let processedAttendance = [];
+        if (Array.isArray(asistenciaData) && asistenciaData.length > 0) {
+            processedAttendance = asistenciaData.map(item => ({
+                hora: item.hora_inicio_promedio, 
+                asistencia: (parseFloat(item.tasa_asistencia_promedio) * 100).toFixed(1)
+            }));
+            processedAttendance.sort((a, b) => parseInt(a.hora) - parseInt(b.hora));
+        }
+
+        setStats({
+            reprobacion: processedBottlenecks,
+            matricula: processedTuition,
+            aprobacionPorHora: processedTimeBias,
+            calidadDocente: processedTeachers,
+            asistenciaPorHora: processedAttendance 
+        });
+
       } catch (err) {
-        setError('Error al recuperar estadísticas históricas de S3.');
+        console.error(err);
+        setError('Error al recuperar estadísticas históricas de S3/DynamoDB.');
       } finally {
         setIsLoading(false);
       }
@@ -32,8 +83,11 @@ const DatasetExplorer = () => {
     <div className="h-[50vh] flex flex-col items-center justify-center text-slate-400">
         <AlertTriangle size={48} className="mb-4 text-red-400 opacity-80"/>
         <p>{error}</p>
+        <button onClick={() => window.location.reload()} className="mt-4 text-blue-600 hover:underline">Reintentar</button>
     </div>
   );
+
+  if (!stats) return null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -49,9 +103,9 @@ const DatasetExplorer = () => {
               <BarChart data={stats.reprobacion} layout="vertical" margin={{ left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" unit="%" hide />
-                <YAxis dataKey="materia" type="category" width={120} tick={{ fontSize: 12 }} />
+                <YAxis dataKey="materia" type="category" width={120} tick={{ fontSize: 10 }} />
                 <Tooltip cursor={{ fill: '#f1f5f9' }} />
-                <Bar dataKey="tasa" fill="#f43f5e" radius={[0, 4, 4, 0]} name="% Reprobación" barSize={30} />
+                <Bar dataKey="tasa" fill="#f43f5e" radius={[0, 4, 4, 0]} name="% Reprobación" barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -101,7 +155,6 @@ const DatasetExplorer = () => {
                 <XAxis dataKey="hora" stroke="#64748b" />
                 <YAxis domain={[0, 100]} stroke="#64748b" />
                 <Tooltip />
-                <ReferenceLine y={70} stroke="#6c0b0bff" strokeDasharray="3 3" strokeWidth={2} label={{ value: "Mínimo Aprobatorio (70)", fill: "#6c0b0bff", fontSize: 15, fontWeight: "bold", dy: -10 }} />
                 <Bar dataKey="tasa" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Tasa Aprobación (%)" />
               </BarChart>
             </ResponsiveContainer>
@@ -118,7 +171,7 @@ const DatasetExplorer = () => {
               <LineChart data={stats.asistenciaPorHora} margin={{ top: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="hora" stroke="#64748b" />
-                <YAxis domain={[50, 100]} stroke="#64748b" />
+                <YAxis domain={[0, 100]} stroke="#64748b" />
                 <Tooltip />
                 <Line type="monotone" dataKey="asistencia" stroke="#f59e0b" strokeWidth={3} dot={{r: 5}} name="% Asistencia" />
               </LineChart>
@@ -130,20 +183,20 @@ const DatasetExplorer = () => {
       <Card>
         <CardHeader>
           <CardTitle>4. Ranking Histórico de Desempeño Docente</CardTitle>
-          <CardDescription>Comparativa basada en promedio de calificaciones (Top 5 vs Bottom 5).</CardDescription>
+          <CardDescription>Comparativa basada en promedio de calificaciones.</CardDescription>
         </CardHeader>
         <CardContent className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.calidadDocente} layout="vertical" margin={{ left: 40, right: 40 }} barCategoryGap="20%">
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" domain={[60, 100]} />
-              <YAxis dataKey="nombre" type="category" width={150} tick={{ fontSize: 12 }} />
+              <YAxis dataKey="nombre" type="category" width={150} tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
-              <ReferenceLine x={70} stroke="#6c0b0bff" strokeDasharray="3 3" strokeWidth={2} label={{ value: "Zona de Riesgo (<70)", fill: "#6c0b0bff", fontSize: 15, fontWeight: "bold"}} />
-              <Bar dataKey="promedio" name="Calif. Promedio del Grupo" radius={[0, 4, 4, 0]}>
+              <ReferenceLine x={70} stroke="#6c0b0bff" strokeDasharray="3 3" strokeWidth={2} label={{ value: "Riesgo (<70)", fill: "#6c0b0bff", fontSize: 12, fontWeight: "bold"}} />
+              <Bar dataKey="promedio" name="Calif. Promedio" radius={[0, 4, 4, 0] } fill={'#f43f5e'}>
                 {stats.calidadDocente.map((entry, index) => (
-                    <cell key={`cell-${index}`} fill={index < 5 ? '#10b981' : '#f43f5e'} />
+                    <Cell key={`cell-${index}`} fill={entry.promedio >= 80 ? '#10b981' : '#f43f5e'} />
                 ))}
               </Bar>
             </BarChart>
