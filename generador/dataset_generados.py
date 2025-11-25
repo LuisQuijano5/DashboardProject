@@ -300,7 +300,7 @@ def simular_progresion_y_grupos(materias_df, profesores_df, salones_df, prereq_m
             print(f"--- Simulando Semestre: {semestre_historico_id} ---")
 
             snapshot_path = f"snapshots/alumnos_{semestre_historico_id}.csv"
-            print(f"Guardando snapshot en {snapshot_path}...")
+            print(f"Guardando snapshot en {snapshot_path}")
             alumnos_df.to_csv(snapshot_path, index=False)
 
             grupos_semestre_actual = []
@@ -532,5 +532,4 @@ if __name__ == "__main__":
     print(f"Guardando alumnos.csv (estado final) ({len(df_alumnos_final)} filas)...")
     df_alumnos_final.to_csv("alumnos.csv", index=False, encoding=encoding_csv)
 
-    print("\n¡Generación de datos V4 completada!")
     print(f"Total de snapshots de alumnos guardados en la carpeta /snapshots: {len(os.listdir('snapshots'))}")

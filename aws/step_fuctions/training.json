@@ -1,0 +1,60 @@
+{
+  "Comment": "Workflow A: Pipeline de Entrenamiento (ETL -> Modelo -> Carga)",
+  "StartAt": "EjecutarETL",
+  "States": {
+    "EjecutarETL": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "script_etl"
+      },
+      "Next": "EjecutarEntrenamiento",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "FalloWorkflow"
+        }
+      ]
+    },
+    "EjecutarEntrenamiento": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "script_model"
+      },
+      "Next": "CargarDashboardDataDynamo",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "FalloWorkflow"
+        }
+      ]
+    },
+    "CargarDashboardDataDynamo": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "load_dashboard_data",
+        "Payload": {}
+      },
+      "End": true,
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "FalloWorkflow"
+        }
+      ]
+    },
+    "FalloWorkflow": {
+      "Type": "Fail",
+      "Cause": "Hubo un error en el proceso de ETL o Entrenamiento.",
+      "Error": "TrainingFailed"
+    }
+  }
+}

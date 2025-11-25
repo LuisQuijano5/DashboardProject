@@ -1,0 +1,42 @@
+{
+  "Comment": "Workflow B: Pipeline de Predicción (Predicción -> Carga Dynamo)",
+  "StartAt": "EjecutarPrediccion",
+  "States": {
+    "EjecutarPrediccion": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "script_predictions"
+      },
+      "Next": "CargaDynamo",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "FalloWorkflow"
+        }
+      ]
+    },
+    "CargaDynamo": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "load_results_data",
+        "Payload": {}
+      },
+      "End": true,
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "FalloWorkflow"
+        }
+      ]
+    },
+    "FalloWorkflow": {
+      "Type": "Fail",
+      "Cause": "Hubo un error en la generación de predicciones.",
+      "Error": "PredictionFailed"
+    }
+  }
+}

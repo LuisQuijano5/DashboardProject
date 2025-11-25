@@ -2,6 +2,26 @@ const BASE_URL = 'https://f6hyqa1nwb.execute-api.us-east-1.amazonaws.com/v2/';
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const api = {
+  triggerWorkflow: async (tipo) => {
+    try {
+      const response = await fetch(`${BASE_URL}trigger-workflow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workflow: tipo })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al iniciar el proceso');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error("Trigger Error:", error);
+      throw error;
+    }
+  },
+
   getSugerencias: async () => {
       try {
         const response = await fetch(`${BASE_URL}sugerencias`);

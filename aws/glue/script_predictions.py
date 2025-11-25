@@ -690,7 +690,7 @@ def save_json_s3(data, filename):
     s3 = boto3.resource('s3')
     obj = s3.Object(bucket_name, f"{path_output_json_prefix}/{filename}")
     obj.put(Body=json.dumps(data, indent=2, ensure_ascii=False))
-    print(f"   💾 Guardado en s3://{bucket_name}/{path_output_json_prefix}/{filename}")
+    print(f"   Guardado en s3://{bucket_name}/{path_output_json_prefix}/{filename}")
 
 save_json_s3(json_sugerencias, "sugerencias_horario.json")
 save_json_s3(json_metrics, "model_metrics.json")
@@ -700,5 +700,5 @@ save_json_s3(json_history, "model_history.json")
 if json_grafica_asistencia:
     save_json_s3(json_grafica_asistencia, "grafica_asistencia_por_hora.json")
 
-print("🚀 ¡JOB FINALIZADO EXITOSAMENTE!")
+print("¡JOB FINALIZADO EXITOSAMENTE!")
 job.commit()

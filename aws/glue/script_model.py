@@ -45,7 +45,6 @@ df.printSchema()
 
 label_col = "Y_TOO_Historica"
 
-# Estas son las columnas numéricas que YA existen en el dataset
 raw_numeric_cols = [
     "X_Cp_Profesor",
     "X_Factor_Demanda_Normalizado",
@@ -160,7 +159,6 @@ gbt = GBTRegressor(
     maxBins=128 # Importante mantener esto
 )
 
-# Rejilla (reducida para que corra rápido esta vez si quieres)
 paramGrid = (ParamGridBuilder()
     .addGrid(gbt.maxDepth, [3, 5])
     .addGrid(gbt.maxIter, [20, 60])
@@ -184,8 +182,6 @@ print("✔ Búsqueda finalizada.")
 # ==========================================================
 # 7. EXTRAER PARÁMETROS Y GENERAR MODELO LIMPIO (¡EL FIX!)
 # ==========================================================
-# Aquí está la magia. En lugar de guardar cv_model.bestModel, 
-# leemos sus "secretos" y creamos uno nuevo.
 
 dirty_best_model = cv_model.bestModel
 
@@ -209,8 +205,6 @@ clean_gbt = GBTRegressor(
     stepSize=best_step
 )
 
-# Entrenamos este modelo limpio con TODOS los datos (Train + Test)
-# Ya sabemos que es bueno, así que usamos toda la data para que sea más robusto
 df_full_data = df_ml 
 final_clean_model = clean_gbt.fit(df_full_data)
 
@@ -221,7 +215,6 @@ print("✔ Modelo limpio generado exitosamente.")
 # ==========================================================
 
 print(f"\n💾 Guardando modelo saneado en: {s3_output_model_path}")
-# Ahora sí, este guardado generará un JSON estándar que NO fallará al leer
 final_clean_model.write().overwrite().save(s3_output_model_path)
 
 print("✔ PROCESO TERMINADO. Ahora puedes correr el Job de Predicción.")
