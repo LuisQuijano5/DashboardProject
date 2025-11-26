@@ -1,5 +1,5 @@
 {
-  "Comment": "Workflow B: Pipeline de Predicción (Predicción -> Carga Dynamo)",
+  "Comment": "Workflow B: Pipeline de Predicción (Predicción -> Carga Dynamo en Paralelo)",
   "StartAt": "EjecutarPrediccion",
   "States": {
     "EjecutarPrediccion": {
@@ -8,7 +8,7 @@
       "Parameters": {
         "JobName": "script_predictions"
       },
-      "Next": "CargaDynamo",
+      "Next": "CargaDynamoParalela",
       "Catch": [
         {
           "ErrorEquals": ["States.ALL"],
@@ -16,27 +16,86 @@
         }
       ]
     },
-    "CargaDynamo": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke",
-      "Parameters": {
-        "FunctionName": "load_results_data",
-        "Payload": {}
-      },
+    "CargaDynamoParalela": {
+      "Type": "Parallel",
       "End": true,
       "Catch": [
         {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
+          "ErrorEquals": ["States.ALL"],
           "Next": "FalloWorkflow"
+        }
+      ],
+      "Branches": [
+        {
+          "StartAt": "CargarSugerencias",
+          "States": {
+            "CargarSugerencias": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "load_results_data",
+                "Payload": {
+                  "tipo": "sugerencias"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CargarMetricas",
+          "States": {
+            "CargarMetricas": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "load_results_data",
+                "Payload": {
+                  "tipo": "metricas"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CargarEvolucion",
+          "States": {
+            "CargarEvolucion": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "load_results_data",
+                "Payload": {
+                  "tipo": "evolucion"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CargarAsistencia",
+          "States": {
+            "CargarAsistencia": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "load_results_data",
+                "Payload": {
+                  "tipo": "asistencia"
+                }
+              },
+              "End": true
+            }
+          }
         }
       ]
     },
     "FalloWorkflow": {
       "Type": "Fail",
-      "Cause": "Hubo un error en la generación de predicciones.",
-      "Error": "PredictionFailed"
+      "Cause": "Hubo un error en la generación de predicciones o carga de datos.",
+      "Error": "PredictionOrLoadFailed"
     }
   }
 }

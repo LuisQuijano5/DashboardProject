@@ -35,7 +35,7 @@ path_catalogo_salones = f"s3://{bucket_name}/raw/historical/catalogo_salones.csv
 path_catalogo_materias = f"s3://{bucket_name}/processed/materias_normalizadas/"
 path_output_json_prefix = "processed/predictions_output"
 
-path_asistencia_s3 = f"s3://{bucket_name}/raw/streaming/2025/11/23/"
+path_asistencia_s3 = f"s3://{bucket_name}/raw/streaming/"
 path_grupos_s3 = f"s3://{bucket_name}/raw/historical/grupos_historicos.csv"
 
 print(f"🚀 Iniciando Job de Predicción V5.")
@@ -329,11 +329,14 @@ try:
     # TRUCO PARA LOCAL: Leer como TEXTO con comodín '*'
     # Esto fuerza a leer archivos sin extensión dentro de la carpeta
     # ------------------------------------------------------------------
-    ruta_con_comodin = os.path.join(path_asistencia_s3, "*")
-    print(f"   📂 Leyendo archivos crudos desde: {ruta_con_comodin}")
+    df_text = spark.read \
+    .option("recursiveFileLookup", "true") \
+    .text(path_asistencia_s3)
     
-    # Leemos el contenido crudo línea por línea
-    df_text = spark.read.text(ruta_con_comodin)
+    # Parseamos la columna 'value' (texto) usando el esquema JSON
+    df_asist_raw = df_text.select(
+        F.from_json(F.col("value"), schema_asistencia).alias("data")
+    ).select("data.*")
     
     # Parseamos la columna 'value' (texto) usando el esquema JSON
     df_asist_raw = df_text.select(
@@ -513,11 +516,23 @@ for row in candidates:
     if prof_id in blacklisted_times:
         dias_clase = obtener_dias_del_string(horario_str)
         restricciones_profe = blacklisted_times[prof_id]
+        
+        parte_horas = horario_str.split(" ")[1] 
+        str_ini, str_fin = parte_horas.split("-")
+        h_inicio_real = int(str_ini.split(":")[0]) 
+        h_fin_real = int(str_fin.split(":")[0])   
+        
+        horas_ocupadas_clase = range(h_inicio_real, h_fin_real)
+
         for dia in dias_clase:
-            if dia in restricciones_profe and hora_ini in restricciones_profe[dia]:
-                bloqueado = True
-                break
-    if bloqueado: continue 
+            if dia in restricciones_profe:
+                for h_clase in horas_ocupadas_clase:
+                    if h_clase in restricciones_profe[dia]:
+                        bloqueado = True
+                        break 
+            if bloqueado: break
+            
+    if bloqueado: continue
             
     # --- REGLA B: Empalmes ---
     key_prof = f"{prof_id}_{horario_str}"
