@@ -34,7 +34,7 @@ path_catalogo_salones = f"s3://{bucket_name}/raw/historical/catalogo_salones.csv
 path_catalogo_materias = f"s3://{bucket_name}/processed/materias_normalizadas/"
 path_output_json_prefix = "processed/predictions_output"
 
-path_asistencia_s3 = f"s3://{bucket_name}/raw/streaming/2025/11/23/"
+path_asistencia_s3 = f"s3://{bucket_name}/raw/streaming/"
 path_grupos_s3 = f"s3://{bucket_name}/raw/historical/grupos_historicos.csv"
 
 print(f"🚀 Iniciando Job de Predicción V5.")
@@ -446,11 +446,23 @@ for row in candidates:
     if prof_id in blacklisted_times:
         dias_clase = obtener_dias_del_string(horario_str)
         restricciones_profe = blacklisted_times[prof_id]
+        
+        parte_horas = horario_str.split(" ")[1] 
+        str_ini, str_fin = parte_horas.split("-")
+        h_inicio_real = int(str_ini.split(":")[0]) 
+        h_fin_real = int(str_fin.split(":")[0])   
+        
+        horas_ocupadas_clase = range(h_inicio_real, h_fin_real)
+
         for dia in dias_clase:
-            if dia in restricciones_profe and hora_ini in restricciones_profe[dia]:
-                bloqueado = True
-                break
-    if bloqueado: continue 
+            if dia in restricciones_profe:
+                for h_clase in horas_ocupadas_clase:
+                    if h_clase in restricciones_profe[dia]:
+                        bloqueado = True
+                        break 
+            if bloqueado: break
+            
+    if bloqueado: continue
             
     #Empalmes
     key_prof = f"{prof_id}_{horario_str}"
@@ -608,7 +620,7 @@ def save_json_s3(data, filename):
     s3 = boto3.resource('s3')
     obj = s3.Object(bucket_name, f"{path_output_json_prefix}/{filename}")
     obj.put(Body=json.dumps(data, indent=2, ensure_ascii=False))
-    print(f"   💾 Guardado en s3://{bucket_name}/{path_output_json_prefix}/{filename}")
+    print(f"   Guardado en s3://{bucket_name}/{path_output_json_prefix}/{filename}")
 
 save_json_s3(json_sugerencias, "sugerencias_horario.json")
 save_json_s3(json_metrics, "model_metrics.json")
@@ -617,5 +629,5 @@ save_json_s3(json_history, "model_history.json")
 if json_grafica_asistencia:
     save_json_s3(json_grafica_asistencia, "grafica_asistencia_por_hora.json")
 
-print("🚀 ¡JOB FINALIZADO EXITOSAMENTE!")
+print("¡JOB FINALIZADO EXITOSAMENTE!")
 job.commit()

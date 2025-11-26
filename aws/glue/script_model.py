@@ -44,7 +44,6 @@ df.printSchema()
 
 label_col = "Y_TOO_Historica"
 
-# Estas son las columnas numéricas que YA existen en el dataset
 raw_numeric_cols = [
     "X_Cp_Profesor",
     "X_Factor_Demanda_Normalizado",

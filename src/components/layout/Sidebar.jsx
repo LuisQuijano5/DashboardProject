@@ -1,5 +1,4 @@
-import React from 'react';
-import { LayoutDashboard, Table, BarChart3, Settings, Database, User } from 'lucide-react';
+import { Table, BarChart3, Settings, Database, User } from 'lucide-react';
 
 const SidebarItem = ({ icon, label, id, isActive, onClick }) => (
   <button
