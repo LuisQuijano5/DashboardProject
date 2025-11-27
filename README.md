@@ -1,10 +1,10 @@
-# 🎓 Sistema de Optimización de Oferta y Horarios (TOO Score)
+# Sistema de Optimización de Oferta y Horarios (TOO Score)
 
-Una plataforma de **Big Data y Machine Learning** diseñada para transformar la planeación académica manual en un proceso predictivo y automatizado basado en datos.
+Una plataforma de **Big Data y Machine Learning** diseñada para servir de propuesta para la transfromación de la planeación académica manual en un proceso predictivo y automatizado basado en datos.
 
 ### 🔗 Enlaces Rápidos
 > **🚀 [Ver Dashboard Deployado (Render)](https://dashboardproject-2ovi.onrender.com/)**
-> **Link Github: https://github.com/LuisQuijano5/DashboardProject/tree/main **
+> **Link Datos: https://drive.google.com/drive/folders/19mLHLvi2CqWAkp8h2ZgMn7cDTc_hjI4J?usp=sharing **
 
 
 
@@ -12,7 +12,7 @@ Una plataforma de **Big Data y Machine Learning** diseñada para transformar la 
 
 ## 📖 Descripción del Proyecto
 
-Este proyecto resuelve la ineficiencia en la generación de horarios escolares mediante una arquitectura **Serverless en AWS**. El sistema ingiere datos históricos y de streaming para calcular el **TOO Score (Tasa de Optimización Operacional)**, una métrica que garantiza:
+Este proyecto busca platear una mejora en la generación de horarios escolares mediante una arquitectura **Serverless en AWS**. El sistema ingiere datos históricos y de streaming para calcular el **TOO Score (Tasa de Optimización Operacional)**, una métrica que garantiza:
 * Minimización de conflictos de traslape.
 * Optimización de recursos (aulas y profesores).
 * Predicción de demanda estudiantil.
@@ -34,7 +34,7 @@ El proyecto utiliza una arquitectura **Cloud-Native** desacoplada:
 1.  **Simulación:** Se generan 10 años de historia académica y flujo de asistencia.
 2.  **Pipeline:** Step Functions dispara los Jobs de Glue para limpieza y Feature Engineering.
 3.  **Modelo:** Un modelo de ML (Gradient Boosted Trees) predice el éxito del horario y asigna el **TOO Score**.
-4.  **Visualización:** Los resultados óptimos se exponen vía API REST al Dashboard administrativo.
+4.  **Visualización:** Los resultados óptimos se exponen vía API Gateway al Dashboard administrativo.
 
 ---
 *Proyecto Final - Big Data - Instituto Tecnológico de Celaya*
